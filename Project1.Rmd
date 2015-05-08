@@ -1,0 +1,192 @@
+---
+title: "Course 5 Project 1"
+author: "YJ Lee"
+date: "Friday, May 08, 2015"
+output: html_document
+---
+  
+
+This is a R markdown file for project 1.
+
+Instructions:   
+1. Loading and preprocessing the data  
+2. What is mean total number of steps taken per day?  
+3. What is the average daily activity pattern?  
+4. Imputing missing values  
+5. Are there differences in activity patterns between weekdays and weekends?  
+
+###1. Loading and preprocessing the data
+
+Show any code that is needed to
+
+- Load the data (i.e. read.csv())
+
+- Process/transform the data (if necessary) into a format suitable for your analysis
+
+
+```{r}
+#load packages
+library(dplyr)
+library(stringi)
+library(ggplot2)
+```
+
+
+
+```{r}
+setwd("C:/Users/YJ/Desktop/Data Science specialization/C5 Reproducible Research/Proj 1/repdata-data-activity")
+
+activity <- read.csv("activity.csv")
+str(activity)
+
+#add additional column, change date from 'factor' class to 'date' class 
+activity$dDate <- strptime(as.character(activity$date), "%Y-%m-%d") 
+
+#add zeros to the front of the interval column, allow changing to 'time' class
+activity$integer = paste0("000", activity$interval, sep = "")
+
+#extract last characters (stringi package)
+activity$hr<- stri_sub(activity$integer,-4,-3)
+activity$min<- stri_sub(activity$integer,-2,-1)
+activity$Time<- paste(activity$hr, activity$min, sep=":")
+
+#combines date and time together
+activity<- within(activity, { DateTime=format(as.POSIXlt(paste(dDate, Time)), "%Y-%m-%d %M:%S") })
+
+head(activity)
+str(activity)
+
+#cleanup
+activity$integer <- NULL
+activity$hr <- NULL
+activity$min <- NULL
+activity$dDate <- NULL
+
+head(activity)
+
+```
+
+###2. What is mean total number of steps taken per day?
+
+For this part of the assignment, you can ignore the missing values in the dataset.
+
+- Calculate the total number of steps taken per day
+
+- If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+
+- Calculate and report the mean and median of the total number of steps taken per day
+
+
+
+```{r}
+#calculate means for each day
+mean<- activity %>% group_by(date) %>% summarise(ave.steps = mean(steps, na.rm=T))
+hist(mean$ave, main ="Histogram of total number of steps taken each day", xlab = "Number of steps", col="skyblue")
+
+meansteps <- mean(mean$ave.steps, na.rm=T)
+meansteps
+
+mediansteps <- median(mean$ave.steps, na.rm=T)
+mediansteps
+
+```
+
+#####The mean is **`r meansteps`** and median is **`r mediansteps`**. 
+
+###3. What is the average daily activity pattern?
+-Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+-Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+
+#calculate means for each interval
+ave.daily<- activity %>% group_by(interval) %>% summarise(ave.steps = mean(steps, na.rm=T))
+ave.daily
+
+plot(ave.daily, type = "l", main = "Average numbe of steps taken at each time interval", ylab= "average number of steps", xlab = "Interval", col ="blue")
+
+#arrange data frame in descending order of steps 
+highest.steps<- arrange(ave.daily, desc(ave.steps))
+highest.steps[[1,1]]
+
+```
+
+#####The maximum number of steps occurred during **`r highest.steps[[1,1]]`h**.   
+    
+###4. Imputing missing values  
+Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+-Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+-Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+-Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+-Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r}
+missing.values<-table(is.na(activity))
+
+missing.values[[2]]
+```
+
+#####The total number of missing values is **`r missing.values[[2]]`**.
+
+```{r}
+
+head(ave.daily)
+head(activity)
+
+
+
+```
+
+
+
+###5. Are there differences in activity patterns between weekdays and weekends?  
+For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+
+-Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+-Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+
+```{r}
+activity$dDate <- strptime(as.character(activity$date), "%Y-%m-%d")
+
+activity$day<- weekdays(activity$dDate)
+
+
+head(activity)
+
+
+1
+201
+
+
+```
+
+
+
+
+
+
+
+
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+summary(cars)
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
