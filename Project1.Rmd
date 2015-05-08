@@ -29,15 +29,17 @@ Show any code that is needed to
 library(dplyr)
 library(stringi)
 library(ggplot2)
+library(Hmisc)
 ```
 
-
+rm(list=ls())
 
 ```{r}
 setwd("C:/Users/YJ/Desktop/Data Science specialization/C5 Reproducible Research/Proj 1/repdata-data-activity")
 
 activity <- read.csv("activity.csv")
 str(activity)
+activity.noNA <- na.omit(activity)
 
 #add additional column, change date from 'factor' class to 'date' class 
 activity$dDate <- strptime(as.character(activity$date), "%Y-%m-%d") 
@@ -80,8 +82,8 @@ For this part of the assignment, you can ignore the missing values in the datase
 
 ```{r}
 #calculate means for each day
-mean<- activity %>% group_by(date) %>% summarise(ave.steps = mean(steps, na.rm=T))
-hist(mean$ave, main ="Histogram of total number of steps taken each day", xlab = "Number of steps", col="skyblue")
+mean<- activity %>% group_by(date) %>% summarise(ave.steps = sum(steps, na.rm=T))
+hist(mean$ave, main ="Histogram of total number of steps taken each day", xlab = "Number of steps", col="skyblue",breaks=20)
 
 meansteps <- mean(mean$ave.steps, na.rm=T)
 meansteps
@@ -104,7 +106,7 @@ mediansteps
 ave.daily<- activity %>% group_by(interval) %>% summarise(ave.steps = mean(steps, na.rm=T))
 ave.daily
 
-plot(ave.daily, type = "l", main = "Average numbe of steps taken at each time interval", ylab= "average number of steps", xlab = "Interval", col ="blue")
+plot(ave.daily, type = "l", main = "Average numbe of steps taken at each time interval", ylab= "average number of steps", xlab = "Time", col ="blue")
 
 #arrange data frame in descending order of steps 
 highest.steps<- arrange(ave.daily, desc(ave.steps))
@@ -133,60 +135,59 @@ missing.values[[2]]
 
 #####The total number of missing values is **`r missing.values[[2]]`**.
 
+
 ```{r}
 
-head(ave.daily)
-head(activity)
+#To fill in the missing values, I'll use mean steps for a five-minute interval for the entire dataset.
 
+
+activity.Imputed <- activity.noNA
+activity.Imputed$steps <- impute(activity.noNA$steps, fun=mean)
+
+#Let's compare the mean and median steps for each day between the original data set and the imputed data set.
+
+mean2<- activity.Imputed %>% group_by(date) %>% summarise(ave.steps = sum(steps, na.rm=T))
+
+
+hist(mean2$ave.steps, main ="Without NAs", xlab = "Number of steps", col="skyblue",breaks=20)
+
+meansteps2 <- mean(mean2$ave.steps, na.rm=T)
+meansteps2
+
+mediansteps2 <- median(mean2$ave.steps, na.rm=T)
+mediansteps2
 
 
 ```
-
-
+#####The new mean is `r meansteps2` and median is `r mediansteps2`. Imputing missing data overestimates both the mean and median.
 
 ###5. Are there differences in activity patterns between weekdays and weekends?  
 For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
 
--Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+- Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
--Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+- Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
 
 ```{r}
 activity$dDate <- strptime(as.character(activity$date), "%Y-%m-%d")
-
-activity$day<- weekdays(activity$dDate)
-
+activity$weekdays <- factor(format(activity$dDate, "%A"))
 
 head(activity)
+str(activity)
+levels(activity$weekdays)
+levels(activity$weekdays) <- list(weekday = c("Monday", "Tuesday",
+                                             "Wednesday", 
+                                             "Thursday", "Friday"),
+                                 weekend = c("Saturday", "Sunday"))
+levels(activity$weekdays)
+activity$dDate <- NULL
 
+ave.daily2<- activity %>% group_by(interval,weekdays) %>% summarise(ave.steps = mean(steps, na.rm=T))
+ave.daily2
 
-1
-201
-
+ggplot(ave.daily2, aes(interval, ave.steps)) +
+    geom_line() + facet_grid(weekdays~.) +
+    xlab("Time") + 
+    ylab("Avarage number of steps")
 
 ```
-
-
-
-
-
-
-
-
-
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r}
-summary(cars)
-```
-
-You can also embed plots, for example:
-
-```{r, echo=FALSE}
-plot(cars)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
